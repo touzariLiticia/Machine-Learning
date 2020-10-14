@@ -1,0 +1,314 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Mon May 25 20:51:24 2020
+@author: macbook
+"""
+
+import arftools as a
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib import cm
+
+import random
+from sklearn.pipeline import Pipeline
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+from sklearn.linear_model import Perceptron
+from sklearn import svm,multiclass, model_selection
+import sklearn
+
+
+def svm_gridSearch(trainx, trainy,kernel):
+    """ Finding the best parameters for this data and for this kernel
+    :param trainx: Contains examples of the learning base
+    :param trainy: Learning Base Labels
+    :param kernel: the kernel of SVM
+
+    """
+
+    grid = {'C': [1, 5, 10, 15, 20, 50, 100],
+            'max_iter': [4000,8000,10000],
+            'kernel': [kernel],
+            'gamma': [0.0001, 0.001, 0.01, 0.1],
+            'degree':[1,3,5,7],
+            'shrinking':[True,False]
+           }
+
+    clf = svm.SVC()
+    clf = model_selection.GridSearchCV(clf, grid, n_jobs=-1,cv=5)
+    clf.fit(trainx, trainy)   
+    return clf.best_params_
+
+def multiClass(trainx, trainy, testx, testy):
+    
+    oneVsOne = multiclass.OneVsOneClassifier(svm.LinearSVC(max_iter=16000))
+    oneVsAll = multiclass.OneVsRestClassifier(svm.LinearSVC(max_iter=16000))
+
+    oneVsOne.fit(trainx, trainy)
+    oneVsOneTrainErr = 1 - oneVsOne.score(trainx, trainy)
+    oneVsOneTestErr = 1 - oneVsOne.score(testx, testy)
+
+    oneVsAll.fit(trainx, trainy)
+    oneVsAllTrainErr= 1 -  oneVsAll.score(trainx, trainy)
+    oneVsAllTestErr = 1 - oneVsAll.score(testx, testy)
+
+    print("L'erreur en train pour oneVsOne :"+str(oneVsOneTrainErr)+" et pour oneVsAll :"+str(oneVsAllTrainErr))
+    print("L'erreur en test de oneVsOne :"+str(oneVsOneTestErr)+" et pour oneVsAll :"+str(oneVsAllTestErr))
+
+if __name__ == "__main__":
+    """
+    # Introduction : Module scikit-learn 
+    print('**********************************************')
+    print("Introduction : Module scikit-learn")
+    print('**********************************************')
+    # Comparaison entre le perceptron qu'on implémenté et celui de scikit learn
+    trainx0,trainy0 =  a.gen_arti(nbex=800,data_type=0 ,epsilon=0.5)
+    testx0,testy0 =  a.gen_arti(nbex=800,data_type=0 ,epsilon=0.5)
+    trainx1,trainy1 =  a.gen_arti(nbex=800,data_type=1 ,epsilon=0.5)
+    testx1,testy1 =  a.gen_arti(nbex=800,data_type=1 ,epsilon=0.5)
+    trainx2,trainy2 =  a.gen_arti(nbex=800,data_type=2 ,epsilon=0.5)
+    testx2,testy2 =  a.gen_arti(nbex=800,data_type=2 ,epsilon=0.5)
+
+    clf = Perceptron(random_state=0)
+    perceptron = a.Lineaire(a.mse,a.mse_g,max_iter=3,eps=0.1)
+    perceptron.fit(trainx0,trainy0)
+    clf.fit(trainx0,trainy0)
+    print("En utilisant Perceptron implémenté en TME3 avec data de type 0, l'erreur : train %f, test %f"% (perceptron.score(trainx0,trainy0),perceptron.score(testx0,testy0)))
+    print("En utilisant le Perceptron de scikit-learn avec data de type 0, l'erreur: train %f, test %f"% (1-clf.score(trainx0,trainy0),1-clf.score(testx0,testy0)))
+    plt.figure()
+    plt.subplot(3, 2, 1)
+    a.plot_frontiere(trainx0,perceptron.predict,200)
+    a.plot_data(trainx0,trainy0)
+    plt.title('Scikit-learn Perceptron')
+
+    plt.subplot(3, 2, 2)
+    a.plot_frontiere(trainx0,clf.predict,200)
+    a.plot_data(trainx0,trainy0)
+    plt.title('Implemented Perceptron')
+
+    clf = Perceptron(random_state=0)
+    perceptron = a.Lineaire(a.mse,a.mse_g,max_iter=3,eps=0.1)
+    perceptron.fit(trainx1,trainy1)
+    clf.fit(trainx1,trainy1)
+    print("En utilisant Perceptron implémenté en TME3 avec data de type 1, l'erreur : train %f, test %f"% (perceptron.score(trainx1,trainy1),perceptron.score(testx1,testy1)))
+    print("En utilisant le Perceptron de scikit-learn avec data de type 1, l'erreur: train %f, test %f"% (1-clf.score(trainx1,trainy1),1-clf.score(testx1,testy1)))
+   
+
+    plt.subplot(3, 2, 3)
+    a.plot_frontiere(trainx1,perceptron.predict,200)
+    a.plot_data(trainx1,trainy1)
+
+    plt.subplot(3, 2, 4)
+    a.plot_frontiere(trainx1,clf.predict,200)
+    a.plot_data(trainx1,trainy1)
+
+    clf = Perceptron(random_state=0)
+    perceptron = a.Lineaire(a.mse,a.mse_g,max_iter=3,eps=0.1)
+    perceptron.fit(trainx2,trainy2)
+    clf.fit(trainx2,trainy2)
+    print("En utilisant Perceptron implémenté en TME3 avec data de type 2, l'erreur : train %f, test %f"% (perceptron.score(trainx2,trainy2),perceptron.score(testx2,testy2)))
+    print("En utilisant le Perceptron de scikit-learn avec data de type 2, l'erreur: train %f, test %f"% (1-clf.score(trainx2,trainy2),1-clf.score(testx2,testy2)))
+   
+    plt.subplot(3, 2, 5)
+    a.plot_frontiere(trainx2,perceptron.predict,200)
+    a.plot_data(trainx2,trainy2)
+
+    plt.subplot(3, 2, 6)
+    a.plot_frontiere(trainx2,clf.predict,200)
+    a.plot_data(trainx2,trainy2)
+    plt.show()
+    """
+
+
+    # ------------------------- SVM et Grid Search
+    print("## loading data")
+    # artificiel data
+    trainx0,trainy0 =  a.gen_arti(nbex=2000,data_type=0 ,epsilon=0.5)
+    trainx1,trainy1 =  a.gen_arti(nbex=2000,data_type=1 ,epsilon=0.5)
+    trainx2,trainy2 =  a.gen_arti(nbex=2000,data_type=2 ,epsilon=0.5)
+    testx0,testy0 =  a.gen_arti(nbex=700,data_type=0 ,epsilon=0.5)
+    testx1,testy1 =  a.gen_arti(nbex=700,data_type=1 ,epsilon=0.5)
+    testx2,testy2 =  a.gen_arti(nbex=700,data_type=2 ,epsilon=0.5)
+    # USPS data
+    trainx71 , trainy71 = a.load_usps ("USPS_train.txt")
+    trainx71,trainy71= a.get_two_classes(trainx71,trainy71,3,8)
+
+    testx71 , testy71 = a.load_usps ("USPS_test.txt")
+    testx71,testy71= a.get_two_classes(testx71,testy71,3,8)
+
+
+
+    print("## loading and filtring data succesfully")
+    print("---------------------------------------\n searching for the best parameter for each kernel using grid search")
+    """
+    result=" "
+    for kernel in ['linear', 'rbf', 'poly', 'sigmoid' ]:
+        result = result+'for the kernel '+kernel+"\n"
+        result = result+"   best parameter using data type 0 are: "+str(svm_gridSearch(trainx0, trainy0,kernel))+"\n"
+        result = result+"   best parameter using data type 1 are: "+str(svm_gridSearch(trainx1, trainy1,kernel))+"\n"
+        result = result+"   best parameter using data type 2 are: "+str(svm_gridSearch(trainx2, trainy2,kernel))+"\n"
+        result = result+"   best parameter using data USPS and the classes 7 and 1 are: "+str(svm_gridSearch(trainx71, trainy71,kernel))+"\n"
+
+    print("------------ optimization finished , the best parameters are : \n"+result)
+    """
+    print("------------ Après avoir les best params de chaque modèle ")
+    err_train0_linear=[]
+    err_test0_linear=[]
+    err_train1_linear=[]
+    err_test1_linear=[]
+    err_train2_linear=[]
+    err_test2_linear=[]
+    err_trainUSPS_linear=[]
+    err_testUSPS_linear=[]
+    nb_obs=[]
+    # Courbe d'erreur pour le kernel linear
+    """
+    for i in range (200,2000,100):
+        nb_obs.append(i)
+
+        s = sklearn.svm.SVC(C=1, degree= 1, gamma= 0.0001, kernel='linear', max_iter= 4000, shrinking= True)
+        s.fit(trainx0[:i], trainy0[:i])
+        err_train0_linear.append( 1 - s.score(trainx0[:i], trainy0[:i]))
+        err_test0_linear.append( 1 - s.score(testx0, testy0))
+
+        s = sklearn.svm.SVC(C=20, degree= 1, gamma= 0.0001, kernel='linear', max_iter= 10000, shrinking= True)     
+        s.fit(trainx1[:i], trainy1[:i])
+        err_train1_linear.append( 1 - s.score(trainx1[:i], trainy1[:i]))
+        err_test1_linear.append( 1 - s.score(testx1, testy1))
+
+        s = sklearn.svm.SVC(C=15, degree= 1, gamma= 0.0001, kernel='linear', max_iter= 8000, shrinking= True)
+        s.fit(trainx2[:i], trainy2[:i])
+        err_train2_linear.append( 1 - s.score(trainx2[:i], trainy2[:i]))
+        err_test2_linear.append( 1 - s.score(testx2, testy2))
+
+        s = sklearn.svm.SVC(C=1, degree= 1, gamma= 0.0001, kernel='linear', max_iter= 4000, shrinking= True)
+        s.fit(trainx71[:i], trainy71[:i])
+        err_trainUSPS_linear.append( 1 - s.score(trainx71[:i], trainy71[:i]))
+        err_testUSPS_linear.append( 1 - s.score(testx71, testy71))
+    plt.subplot(1, 2, 1)
+    plt.plot(nb_obs,err_train0_linear,label="type 0")
+    plt.plot(nb_obs,err_train1_linear,label="type 1")
+    plt.plot(nb_obs,err_train2_linear,label="type 2")
+    plt.plot(nb_obs,err_trainUSPS_linear,label="type USPS")
+    plt.ylabel("l'erreur")
+    plt.xlabel("nombre d'exemples pour l'apprentissage")
+    plt.legend()
+
+    plt.subplot(1, 2, 2)
+    plt.plot(nb_obs,err_test0_linear,label="type 0")
+    plt.plot(nb_obs,err_test1_linear,label="type 1")
+    plt.plot(nb_obs,err_test2_linear,label="type 2")
+    plt.plot(nb_obs,err_testUSPS_linear,label="type USPS")
+   
+    plt.xlabel("nombre d'exemples pour l'apprentissage")
+    plt.legend()
+    plt.show()
+    """
+    """
+    # les courbes d'erreur pour le kernel polynomial
+    for i in range (200,2000,100):
+        nb_obs.append(i)
+
+        s = sklearn.svm.SVC(C=1, degree= 1, gamma= 0.0001, kernel='poly', max_iter= 4000, shrinking= True)
+        s.fit(trainx0[:i], trainy0[:i])
+        err_train0_linear.append( 1 - s.score(trainx0[:i], trainy0[:i]))
+        err_test0_linear.append( 1 - s.score(testx0, testy0))
+
+        s = sklearn.svm.SVC(C=10, degree= 2, gamma= 0.1, kernel='poly', max_iter=4000, shrinking= True)     
+        s.fit(trainx1[:i], trainy1[:i])
+        err_train1_linear.append( 1 - s.score(trainx1[:i], trainy1[:i]))
+        err_test1_linear.append( 1 - s.score(testx1, testy1))
+
+        s = sklearn.svm.SVC(C=20, degree= 4, gamma= 0.1, kernel='poly', max_iter= 10000, shrinking= True)
+        s.fit(trainx2[:i], trainy2[:i])
+        err_train2_linear.append( 1 - s.score(trainx2[:i], trainy2[:i]))
+        err_test2_linear.append( 1 - s.score(testx2, testy2))
+
+        s = sklearn.svm.SVC(C=15, degree= 2, gamma= 0.01, kernel='poly', max_iter= 4000, shrinking= True)
+        s.fit(trainx71[:i], trainy71[:i])
+        err_trainUSPS_linear.append( 1 - s.score(trainx71[:i], trainy71[:i]))
+        err_testUSPS_linear.append( 1 - s.score(testx71, testy71))
+    plt.subplot(1, 2, 1)
+    plt.plot(nb_obs,err_train0_linear,label="type 0")
+    plt.plot(nb_obs,err_train1_linear,label="type 1")
+    plt.plot(nb_obs,err_train2_linear,label="type 2")
+    plt.plot(nb_obs,err_trainUSPS_linear,label="type USPS")
+    plt.ylabel("l'erreur")
+    plt.xlabel("nombre d'exemples pour l'apprentissage")
+    plt.legend()
+
+    plt.subplot(1, 2, 2)
+    plt.plot(nb_obs,err_test0_linear,label="type 0")
+    plt.plot(nb_obs,err_test1_linear,label="type 1")
+    plt.plot(nb_obs,err_test2_linear,label="type 2")
+    plt.plot(nb_obs,err_testUSPS_linear,label="type USPS")
+   
+    plt.xlabel("nombre d'exemples pour l'apprentissage")
+    plt.legend()
+    plt.show()
+    """
+    """
+    # Courbe d'erreur pour le kernel gaussien
+    for i in range (200,2000,100):
+        nb_obs.append(i)
+
+        s = sklearn.svm.SVC(C=1, degree= 1, gamma= 0.0001, kernel='rbf', max_iter= 4000, shrinking= True)
+        s.fit(trainx0[:i], trainy0[:i])
+        err_train0_linear.append( 1 - s.score(trainx0[:i], trainy0[:i]))
+        err_test0_linear.append( 1 - s.score(testx0, testy0))
+
+        s = sklearn.svm.SVC(C=1, degree= 1, gamma= 0.1, kernel='rbf', max_iter=4000, shrinking= True)     
+        s.fit(trainx1[:i], trainy1[:i])
+        err_train1_linear.append( 1 - s.score(trainx1[:i], trainy1[:i]))
+        err_test1_linear.append( 1 - s.score(testx1, testy1))
+
+        s = sklearn.svm.SVC(C=20, degree= 5,gamma=1, kernel='rbf', max_iter= 10000, shrinking= True)
+        s.fit(trainx2[:i], trainy2[:i])
+        err_train2_linear.append( 1 - s.score(trainx2[:i], trainy2[:i]))
+        err_test2_linear.append( 1 - s.score(testx2, testy2))
+
+        s = sklearn.svm.SVC(C=1, degree= 1, gamma= 0.001, kernel='rbf', max_iter= 4000, shrinking= True)
+        s.fit(trainx71[:i], trainy71[:i])
+        err_trainUSPS_linear.append( 1 - s.score(trainx71[:i], trainy71[:i]))
+        err_testUSPS_linear.append( 1 - s.score(testx71, testy71))
+    plt.subplot(1, 2, 1)
+    plt.plot(nb_obs,err_train0_linear,label="type 0")
+    plt.plot(nb_obs,err_train1_linear,label="type 1")
+    plt.plot(nb_obs,err_train2_linear,label="type 2")
+    plt.plot(nb_obs,err_trainUSPS_linear,label="type USPS")
+    plt.ylabel("l'erreur")
+    plt.xlabel("nombre d'exemples pour l'apprentissage")
+    plt.legend()
+
+    plt.subplot(1, 2, 2)
+    plt.plot(nb_obs,err_test0_linear,label="type 0")
+    plt.plot(nb_obs,err_test1_linear,label="type 1")
+    plt.plot(nb_obs,err_test2_linear,label="type 2")
+    plt.plot(nb_obs,err_testUSPS_linear,label="type USPS")
+   
+    plt.xlabel("nombre d'exemples pour l'apprentissage")
+    plt.legend()
+    plt.show()
+    """
+
+
+"""
+    # -------------------Apprentissage multi-classe
+    print( "OneVsOne  vs  OneVsAll :")
+    trainx , trainy = a.load_usps ( "USPS_train.txt" )
+    testx , testy = a.load_usps ( "USPS_test.txt" )
+    multiClass(trainx, trainy, testx, testy)
+"""
+
+
+
+
+
+"""
+    # String kernel
+
+
+
+"""
